@@ -10,8 +10,7 @@ from langchain.document_loaders import TextLoader
 from langchain.chains import RetrievalQA,  ConversationalRetrievalChain
 #from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
-from langchain.document_loaders import TextLoader
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 import tempfile
 
 
