@@ -1,6 +1,6 @@
-# 📄 Document question answering template
+# PDF Chatbot
 
-A simple Streamlit app that answers questions about an uploaded document via OpenAI's GPT-3.5.
+A Streamlit app that answers questions about uploaded PDFs using GPT-4o.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://document-question-answering-template.streamlit.app/)
 
