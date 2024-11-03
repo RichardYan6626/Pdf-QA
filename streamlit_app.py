@@ -1,27 +1,35 @@
 import streamlit as st
 import openai
 import os
+import shutil
 from PyPDF2 import PdfReader
 from openai import OpenAI
-from langchain_community.embeddings import OpenAIEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain.vectorstores import DocArrayInMemorySearch, Chroma
 from langchain.document_loaders import TextLoader
-from langchain.chains import RetrievalQA,  ConversationalRetrievalChain
+from langchain.chains import RetrievalQA, ConversationalRetrievalChain
 from langchain_openai import ChatOpenAI
-from langchain_community.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader
 import tempfile
+from uuid import uuid4
 
+# Environment setup for LangSmith
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+os.environ["LANGCHAIN_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = "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"
 
-#1. Enable persist for handling multiple pdf files
-#2. unable to handle markdown features
-#3. Select chain type
-#4. Select chunk_size and chunk_overlap
+def initialize_session_state():
+    if 'db' not in st.session_state:
+        st.session_state.db = None
+    if 'current_file' not in st.session_state:
+        st.session_state.current_file = None
 
-
-
-#Logic for ingesting PDF files
 def load_db(file):
+    # Generate a unique collection name based on the file name
+    collection_name = f"pdf_qa_{uuid4()}"
+    
     # Save the uploaded file to a temporary location
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
         temp_file.write(file.read())
@@ -38,56 +46,87 @@ def load_db(file):
     # Define embedding
     embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
 
+    # Clear the persist directory if it exists
+    persist_directory = "./Chroma"
+    if os.path.exists(persist_directory):
+        shutil.rmtree(persist_directory)
+
     # Create vector database from data
-    db = Chroma.from_documents(docs, embeddings,persist_directory= "./chroma/",collection_name="example_collection")
-    st.write(db._collection.count())
-
-    # Define retriever and memory
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-    #memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-
-    # Create a chatbot chain. Memory is managed externally.
-    qa = RetrievalQA.from_chain_type(
-        llm=ChatOpenAI(model_name="gpt-4o", temperature=0),
-        chain_type = "map_reduce",
-        retriever=retriever,
+    db = Chroma(
+        collection_name=collection_name,
+        embedding_function=embeddings,
+        persist_directory=persist_directory
     )
-    return qa
+    
+    # Add documents with unique IDs
+    uuids = [str(uuid4()) for _ in range(len(docs))]
+    db.add_documents(documents=docs, ids=uuids)
+    
+    # Clean up temporary file
+    os.unlink(temp_file_path)
+    
+    return db
 
-# Show title and description.
-st.title("PDF Chatbot:coffee:")
-st.write(
-    "Upload a pdf below and ask questions about it – GPT will answer! "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-)
+def main():
+    st.title("PDF Question Answering System")
+    
+    # Initialize session state
+    initialize_session_state()
+    
+    # File uploader
+    uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
+    
+    # Check if a new file was uploaded
+    if uploaded_file is not None and uploaded_file != st.session_state.current_file:
+        try:
+            # Initialize or load the vector database
+            st.session_state.db = load_db(uploaded_file)
+            st.session_state.current_file = uploaded_file
+            st.success("File successfully loaded!")
+        except Exception as e:
+            st.error(f"An error occurred while loading the file: {str(e)}")
+    
+    if st.session_state.db is not None:
+        try:
+            # Initialize the ChatOpenAI model
+            llm = ChatOpenAI(
+                temperature=0.7,
+                model_name="gpt-4"
+            )
+            
+            # Create the QA chain
+            qa_chain = RetrievalQA.from_chain_type(
+                llm=llm,
+                chain_type="stuff",
+                retriever=st.session_state.db.as_retriever(search_kwargs={"k": 3}),
+                return_source_documents=True
+            )
+            
+            # Question input
+            question = st.text_input("Ask a question about your PDF:")
+            
+            if question:
+                with st.spinner("Generating answer..."):
+                    # Get the answer
+                    result = qa_chain({"query": question})
+                    
+                    # Display collection count
+                    st.write("### Collection Count")
+                    st.write(st.session_state.db._collection.count())
+                    
+                    # Display the answer
+                    st.write("### Answer:")
+                    st.write(result["result"])
+                    
+                    # Display source documents
+                    st.write("### Sources:")
+                    for i, doc in enumerate(result["source_documents"]):
+                        st.write(f"Source {i+1}:")
+                        st.write(doc.page_content)
+                        st.write("---")
+                        
+        except Exception as e:
+            st.error(f"An error occurred during question answering: {str(e)}")
 
-# Ask user for their OpenAI API key via `st.text_input`.
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
-    os.environ["OPENAI_API_KEY"] = openai_api_key
-    #openai.api_key = openai_api_key
-    # Let the user upload a file via `st.file_uploader`.
-    uploaded_file = st.file_uploader("Upload a d.pdf", type="pdf")
-
-    # Ask the user for a question via `st.text_area`.
-    question = st.text_area(
-        "Now ask a question about it!",
-        placeholder="Can you give me a short summary?",
-        disabled=not uploaded_file,
-    )
-
-    if uploaded_file and question:
-        # Process the uploaded file and question.
-        qa = load_db(uploaded_file)
-        outputs = qa.invoke({"query": question})
-        query_text = outputs.get("query", "")
-        result_text = outputs.get("result", "")
-
-
-        # Use st.write_stream to stream the result
-        if result_text:
-            st.write(result_text)
-        else:
-            st.write("No result found.")
+if __name__ == "__main__":
+    main()
