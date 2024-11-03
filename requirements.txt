@@ -3,3 +3,5 @@ openai
 PyPDF2
 langchain
 chromadb
+langchain-openai
+langchain-community
