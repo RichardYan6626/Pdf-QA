@@ -16,7 +16,7 @@ from uuid import uuid4
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 os.environ["LANGCHAIN_API_KEY"] = "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"
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = ""
 
 def initialize_session_state():
     if 'db' not in st.session_state:
