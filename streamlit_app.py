@@ -1,16 +1,14 @@
 import streamlit as st
 import openai
 import os
-import shutil
 from PyPDF2 import PdfReader
 from openai import OpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
-from langchain.vectorstores import DocArrayInMemorySearch, Chroma
-from langchain.document_loaders import TextLoader
-from langchain.chains import RetrievalQA, ConversationalRetrievalChain
-from langchain_openai import ChatOpenAI
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores import FAISS
 from langchain.document_loaders import PyPDFLoader
+from langchain.chains import RetrievalQA
+from langchain_openai import ChatOpenAI
 import tempfile
 from uuid import uuid4
 
@@ -25,47 +23,38 @@ def initialize_session_state():
         st.session_state.db = None
     if 'current_file' not in st.session_state:
         st.session_state.current_file = None
+    if 'document_count' not in st.session_state:
+        st.session_state.document_count = 0
 
 def load_db(file):
-    # Generate a unique collection name based on the file name
-    collection_name = f"pdf_qa_{uuid4()}"
-    
     # Save the uploaded file to a temporary location
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
         temp_file.write(file.read())
         temp_file_path = temp_file.name
     
-    # Load documents using PyPDFLoader
-    loader = PyPDFLoader(temp_file_path)
-    documents = loader.load()
-    
-    # Split documents
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    docs = text_splitter.split_documents(documents)
+    try:
+        # Load documents using PyPDFLoader
+        loader = PyPDFLoader(temp_file_path)
+        documents = loader.load()
+        
+        # Split documents
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+        docs = text_splitter.split_documents(documents)
 
-    # Define embedding
-    embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
+        # Define embedding
+        embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
 
-    # Clear the persist directory if it exists
-    persist_directory = "./Chroma"
-    if os.path.exists(persist_directory):
-        shutil.rmtree(persist_directory)
-
-    # Create vector database from data
-    db = Chroma(
-        collection_name=collection_name,
-        embedding_function=embeddings,
-        persist_directory=persist_directory
-    )
+        # Create vector database using FAISS
+        db = FAISS.from_documents(docs, embeddings)
+        
+        # Store the document count
+        st.session_state.document_count = len(docs)
+        
+        return db
     
-    # Add documents with unique IDs
-    uuids = [str(uuid4()) for _ in range(len(docs))]
-    db.add_documents(documents=docs, ids=uuids)
-    
-    # Clean up temporary file
-    os.unlink(temp_file_path)
-    
-    return db
+    finally:
+        # Clean up temporary file
+        os.unlink(temp_file_path)
 
 def main():
     st.title("PDF Question Answering System")
@@ -110,9 +99,9 @@ def main():
                     # Get the answer
                     result = qa_chain({"query": question})
                     
-                    # Display collection count
-                    st.write("### Collection Count")
-                    st.write(st.session_state.db._collection.count())
+                    # Display document count
+                    st.write("### Document Count")
+                    st.write(st.session_state.document_count)
                     
                     # Display the answer
                     st.write("### Answer:")
