@@ -14,12 +14,12 @@ from langchain.document_loaders import TextLoader
 from langchain.document_loaders import PyPDFLoader
 import tempfile
 
-"""
-1. Enable persist for handling multiple pdf files
-2. unable to handle markdown features
-3. Select chain type
-4. Select chunk_size and chunk_overlap
-"""
+
+#1. Enable persist for handling multiple pdf files
+#2. unable to handle markdown features
+#3. Select chain type
+#4. Select chunk_size and chunk_overlap
+
 
 
 #Logic for ingesting PDF files
