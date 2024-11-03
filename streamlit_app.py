@@ -3,12 +3,11 @@ import openai
 import os
 from PyPDF2 import PdfReader
 from openai import OpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_community.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
-from langchain.vectorstores import DocArrayInMemorySearch, Chroma
+from langchain_community.vectorstores import Chroma
 from langchain.document_loaders import TextLoader
 from langchain.chains import RetrievalQA,  ConversationalRetrievalChain
-#from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
 from langchain_community.document_loaders import PyPDFLoader
 import tempfile
