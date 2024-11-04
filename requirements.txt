@@ -5,3 +5,4 @@ langchain
 chromadb
 PyPDF2
 python-dotenv
+protobuf==3.20.0  # Added to fix the protobuf error
