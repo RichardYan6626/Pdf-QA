@@ -11,9 +11,16 @@ from langchain.vectorstores import Chroma
 from langchain.document_loaders import PyPDFLoader
 import tempfile
 from uuid import uuid4
-import(‘pysqlite3’)
 import sys
-sys.modules[‘sqlite3’] = sys.modules.pop(‘pysqlite3’)
+import subprocess
+
+# Ensure pysqlite3 is available in stremlit environment
+try:
+    import pysqlite3
+    sys.modules['sqlite3'] = pysqlite3
+except ImportError:
+    pass
+
 
 #Clean up when a session ends
 def cleanup_chroma_directory():
