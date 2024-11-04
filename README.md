@@ -2,7 +2,7 @@
 
 A RAG based Streamlit app that answers questions about uploaded PDFs using GPT-4o.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://document-question-answering-template.streamlit.app/)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)(https://pdfchatbot-nr5ql064n9g.streamlit.app/)
 
 ### How to run it on your own machine
 
