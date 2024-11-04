@@ -1,8 +1,7 @@
 streamlit
-openai
-PyPDF2
-langchain
 langchain-openai
-langchain-community
-tiktoken
-
+openai
+langchain
+chromadb
+PyPDF2
+python-dotenv
