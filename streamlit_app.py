@@ -1,116 +1,152 @@
+#pages/1 PDF_Upload
 import streamlit as st
 import openai
 import os
-from PyPDF2 import PdfReader
+import shutil
+import atexit
 from openai import OpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import FAISS
+from langchain.vectorstores import Chroma
 from langchain.document_loaders import PyPDFLoader
-from langchain.chains import RetrievalQA
-from langchain_openai import ChatOpenAI
 import tempfile
 from uuid import uuid4
 
+#Clean up when a session ends
+def cleanup_chroma_directory():
+    """Clean up all Chroma directories"""
+    try:
+        directories = [d for d in os.listdir('.') if d.startswith('Chroma_')]
+        for directory in directories:
+            shutil.rmtree(directory)
+    except Exception as e:
+        print(f"Error during cleanup: {e}")
 
-def initialize_session_state():
+# Register cleanup function to run at exit
+atexit.register(cleanup_chroma_directory)
+
+def init_session_state():
+    #Initialize session state variables
     if 'db' not in st.session_state:
         st.session_state.db = None
     if 'current_file' not in st.session_state:
         st.session_state.current_file = None
-    if 'document_count' not in st.session_state:
-        st.session_state.document_count = 0
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    if 'session_id' not in st.session_state:
+        # Generate unique session ID
+        st.session_state.session_id = str(uuid4())
+    if 'chroma_directory' not in st.session_state:
+        st.session_state.chroma_directory = None
 
-def load_db(file):
-    # Save the uploaded file to a temporary location
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
-        temp_file.write(file.read())
-        temp_file_path = temp_file.name
+#Load PDF file and create vectorstore
+def load_db(file, file_name):
     
+    # Clear previous QA chain when loading new file
+    if 'qa_chain' in st.session_state:
+        del st.session_state.qa_chain
+    
+    # Clean up previous Chroma directory if it exists
+    if st.session_state.chroma_directory and os.path.exists(st.session_state.chroma_directory):
+        shutil.rmtree(st.session_state.chroma_directory)
+        
+    # Create new collection name using session ID and file name
+    collection_name = f"{st.session_state.session_id}_{file_name}"
+    st.session_state.chroma_directory = f"./Chroma_{collection_name}"
+
+    # Create a progress bar
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+
     try:
-        # Load documents using PyPDFLoader
+        # Save uploaded file
+        status_text.text("Saving uploaded file...")
+        progress_bar.progress(10)
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+            temp_file.write(file.read())
+            temp_file_path = temp_file.name
+        
+        # Load PDF
+        status_text.text("Loading PDF...")
+        progress_bar.progress(20)
         loader = PyPDFLoader(temp_file_path)
         documents = loader.load()
         
         # Split documents
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+        status_text.text("Processing document chunks...")
+        progress_bar.progress(40)
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len
+        )
         docs = text_splitter.split_documents(documents)
 
-        # Define embedding
+        # Create embeddings
+        status_text.text("Creating embeddings...")
+        progress_bar.progress(60)
         embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
 
-        # Create vector database using FAISS
-        db = FAISS.from_documents(docs, embeddings)
+        # Create vector database
+        status_text.text("Creating vector database...")
+        progress_bar.progress(90)
+        db = Chroma(
+            collection_name=collection_name,
+            embedding_function=embeddings,
+            persist_directory=st.session_state.chroma_directory
+        )
         
-        # Store the document count
-        st.session_state.document_count = len(docs)
+        # Add documents
+        uuids = [str(uuid4()) for _ in range(len(docs))]
+        db.add_documents(documents=docs, ids=uuids)
         
-        return db
-    
-    finally:
-        # Clean up temporary file
+        # Cleanup
         os.unlink(temp_file_path)
+        progress_bar.progress(100)
+        status_text.text("Complete!")
+        return db
+
+    except Exception as e:
+        progress_bar.empty()
+        status_text.empty()
+        raise e
 
 def main():
-    st.title("PDF Question Answering System")
+    st.title("PDF Upload and Processing 📚")
     
     # Initialize session state
-    initialize_session_state()
+    init_session_state()
     
-    # File uploader
+    # Add cleanup function to session state if not already added
+    if 'cleanup_done' not in st.session_state:
+        cleanup_chroma_directory()  # Clean up any leftover directories from previous sessions
+        st.session_state.cleanup_done = True
+        
+    openai.api_key = st.text_area("Input your openai api")
     uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
     
-    # Check if a new file was uploaded
-    if uploaded_file is not None and uploaded_file != st.session_state.current_file:
+    if uploaded_file is not None and (st.session_state.current_file is None or 
+                                    uploaded_file.name != st.session_state.current_file.name):
         try:
-            # Initialize or load the vector database
-            st.session_state.db = load_db(uploaded_file)
+            # First set the current file
             st.session_state.current_file = uploaded_file
+            # Then pass both file and file name to load_db
+            st.session_state.db = load_db(uploaded_file, uploaded_file.name)
             st.success("File successfully loaded!")
         except Exception as e:
             st.error(f"An error occurred while loading the file: {str(e)}")
     
-    if st.session_state.db is not None:
-        try:
-            # Initialize the ChatOpenAI model
-            llm = ChatOpenAI(
-                temperature=0.7,
-                model_name="gpt-4"
-            )
-            
-            # Create the QA chain
-            qa_chain = RetrievalQA.from_chain_type(
-                llm=llm,
-                chain_type="stuff",
-                retriever=st.session_state.db.as_retriever(search_kwargs={"k": 3}),
-                return_source_documents=True
-            )
-            
-            # Question input
-            question = st.text_input("Ask a question about your PDF:")
-            
-            if question:
-                with st.spinner("Generating answer..."):
-                    # Get the answer
-                    result = qa_chain({"query": question})
-                    
-                    # Display document count
-                    st.write("### Document Count")
-                    st.write(st.session_state.document_count)
-                    
-                    # Display the answer
-                    st.write("### Answer:")
-                    st.write(result["result"])
-                    
-                    # Display source documents
-                    st.write("### Sources:")
-                    for i, doc in enumerate(result["source_documents"]):
-                        st.write(f"Source {i+1}:")
-                        st.write(doc.page_content)
-                        st.write("---")
-                        
-        except Exception as e:
-            st.error(f"An error occurred during question answering: {str(e)}")
+    if st.session_state.current_file is not None:
+        st.info(f"Currently loaded file: {st.session_state.current_file.name}")
+        
+        # Add a manual cleanup button if needed
+        if st.button("Clear Current Session"):
+            cleanup_chroma_directory()
+            st.session_state.db = None
+            st.session_state.current_file = None
+            st.session_state.chat_history = []
+            st.rerun()
 
 if __name__ == "__main__":
     main()
