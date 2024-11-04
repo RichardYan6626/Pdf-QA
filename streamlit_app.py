@@ -123,7 +123,7 @@ def main():
         cleanup_chroma_directory()  # Clean up any leftover directories from previous sessions
         st.session_state.cleanup_done = True
         
-    openai.api_key = st.text_area("Input your openai api")
+    openai.api_key = st.text_input("Input your openai api")
     uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
     
     if uploaded_file is not None and (st.session_state.current_file is None or 
