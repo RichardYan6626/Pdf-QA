@@ -1,6 +1,6 @@
 # PDF Chatbot
 
-A Streamlit app that answers questions about uploaded PDFs using GPT-4o.
+A RAG based Streamlit app that answers questions about uploaded PDFs using GPT-4o.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://document-question-answering-template.streamlit.app/)
 
