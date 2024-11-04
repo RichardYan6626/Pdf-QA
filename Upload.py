@@ -11,6 +11,9 @@ from langchain.vectorstores import Chroma
 from langchain.document_loaders import PyPDFLoader
 import tempfile
 from uuid import uuid4
+import(‘pysqlite3’)
+import sys
+sys.modules[‘sqlite3’] = sys.modules.pop(‘pysqlite3’)
 
 #Clean up when a session ends
 def cleanup_chroma_directory():
