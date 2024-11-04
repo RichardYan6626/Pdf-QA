@@ -104,8 +104,9 @@ def load_db(file, file_name):
         db = Chroma(
             collection_name=collection_name,
             embedding_function=embeddings,
-            persist_directory=st.session_state.chroma_directory
+            persist_directory=None
         )
+        #persist_directory=st.session_state.chroma_directory works
         
         # Add documents
         uuids = [str(uuid4()) for _ in range(len(docs))]
