@@ -2,7 +2,7 @@ streamlit
 langchain-openai
 openai
 langchain
-chromadb
+chromadb==0.4.22  # Using an older version that has fewer SQLite version requirements
 PyPDF2
 python-dotenv
-protobuf==3.20.0  # Added to fix the protobuf error
+protobuf==3.20.0
