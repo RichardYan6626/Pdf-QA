@@ -1,12 +1,11 @@
-# pages/2_❓_Question_Answering.py
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 import datetime
 
+#initialize QA chain and store in session state
 def initialize_qa_chain():
-    """Initialize QA chain once and store in session state"""
     if 'qa_chain' not in st.session_state:
         llm = ChatOpenAI(
             temperature=0.9,
@@ -30,18 +29,15 @@ def main():
         return
         
     try:
-        # Initialize QA chain once
         initialize_qa_chain()
         
-        # Question input
         question = st.text_input("Ask a question about your PDF:")
         
         if question:
             with st.spinner("Generating answer..."):
-                # Use the stored QA chain
                 result = st.session_state.qa_chain({"query":question})
                 
-                # Store minimal information in chat history
+                # Store information in chat history
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 chat_entry = {
                     "timestamp": timestamp,
@@ -51,12 +47,12 @@ def main():
                     "file_name": st.session_state.current_file.name
                 }
                 
-                # Limit chat history size
-                if len(st.session_state.chat_history) > 50:  # Keep only last 50 conversations
+                # Chat history size limit
+                if len(st.session_state.chat_history) > 50: 
                     st.session_state.chat_history.pop(0)
                 st.session_state.chat_history.append(chat_entry)
                 
-                # Display the answer
+                # Display answers
                 st.write("### Answer:")
                 st.write(result["result"])
                 
