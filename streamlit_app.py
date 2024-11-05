@@ -1,26 +1,16 @@
-#pages/1 PDF_Upload
 import streamlit as st
 import openai
 import os
 import shutil
 import atexit
-from openai import OpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
-from langchain.document_loaders import PyPDFLoader
 import tempfile
+from dotenv import load_dotenv, find_dotenv
 from uuid import uuid4
-import sys
-import subprocess
-
-# Ensure pysqlite3 is available in stremlit environment
-try:
-    import pysqlite3
-    sys.modules['sqlite3'] = pysqlite3
-except ImportError:
-    pass
-
 
 #Clean up when a session ends
 def cleanup_chroma_directory():
@@ -35,8 +25,8 @@ def cleanup_chroma_directory():
 # Register cleanup function to run at exit
 atexit.register(cleanup_chroma_directory)
 
+#Initialize session states
 def init_session_state():
-    #Initialize session state variables
     if 'db' not in st.session_state:
         st.session_state.db = None
     if 'current_file' not in st.session_state:
@@ -49,10 +39,10 @@ def init_session_state():
     if 'chroma_directory' not in st.session_state:
         st.session_state.chroma_directory = None
 
+
 #Load PDF file and create vectorstore
 def load_db(file, file_name):
-    
-    # Clear previous QA chain when loading new file
+    # Clear previous QA chain when new file is uploaded
     if 'qa_chain' in st.session_state:
         del st.session_state.qa_chain
     
@@ -60,8 +50,8 @@ def load_db(file, file_name):
     if st.session_state.chroma_directory and os.path.exists(st.session_state.chroma_directory):
         shutil.rmtree(st.session_state.chroma_directory)
         
-    # Create new collection name using session ID and file name
-    collection_name = f"{st.session_state.session_id}_{file_name}"
+    # Create new collection name using the file name
+    collection_name = f"{file_name}"
     st.session_state.chroma_directory = f"./Chroma_{collection_name}"
 
     # Create a progress bar
@@ -104,9 +94,8 @@ def load_db(file, file_name):
         db = Chroma(
             collection_name=collection_name,
             embedding_function=embeddings,
-            persist_directory=None
+            persist_directory=st.session_state.chroma_directory
         )
-        #persist_directory=st.session_state.chroma_directory works
         
         # Add documents
         uuids = [str(uuid4()) for _ in range(len(docs))]
@@ -124,7 +113,7 @@ def load_db(file, file_name):
         raise e
 
 def main():
-    st.title("PDF Upload and Processing 📚")
+    st.title("PDF QA :coffee:")
     
     # Initialize session state
     init_session_state()
@@ -134,10 +123,12 @@ def main():
         cleanup_chroma_directory()  # Clean up any leftover directories from previous sessions
         st.session_state.cleanup_done = True
         
-    openai.api_key = st.text_input("Input your openai api")
-    os.environ["OPENAI_API_KEY"]=str(openai.api_key)
+    #Load openai api key from .env
+    _ = load_dotenv(find_dotenv()) 
+    openai.api_key  = os.environ['OPENAI_API_KEY']
     uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
     
+    #Handling new uploads
     if uploaded_file is not None and (st.session_state.current_file is None or 
                                     uploaded_file.name != st.session_state.current_file.name):
         try:
@@ -152,7 +143,7 @@ def main():
     if st.session_state.current_file is not None:
         st.info(f"Currently loaded file: {st.session_state.current_file.name}")
         
-        # Add a manual cleanup button if needed
+        # Manual cleanup button
         if st.button("Clear Current Session"):
             cleanup_chroma_directory()
             st.session_state.db = None
