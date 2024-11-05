@@ -1,22 +1,17 @@
-# pages/3_📝_Chat_History.py
 import streamlit as st
 import pandas as pd
 
 def main():
-    st.title("Chat History 📝")
+    st.title("Chat History")
     
     if 'chat_history' not in st.session_state or not st.session_state.chat_history:
         st.info("No chat history available yet. Start asking questions in the Question Answering page!")
         return
     
-    # Add filters
+    # Filter chat history by file names
     st.sidebar.header("Filters")
-    
-    # Get unique file names
     file_names = list(set(entry["file_name"] for entry in st.session_state.chat_history))
     selected_file = st.sidebar.selectbox("Filter by PDF", ["All"] + file_names)
-    
-    # Filter chat history
     filtered_history = st.session_state.chat_history
     if selected_file != "All":
         filtered_history = [entry for entry in filtered_history if entry["file_name"] == selected_file]
@@ -34,7 +29,7 @@ def main():
                 st.write(source)
                 st.write("---")
     
-    # Add export functionality
+    # Export chat history to CSV
     if st.button("Export Chat History to CSV"):
         df = pd.DataFrame(filtered_history)
         csv = df.to_csv(index=False).encode('utf-8')
