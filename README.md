@@ -9,15 +9,8 @@ This application allows you to upload PDFs and ask questions about their content
 ## Setup Instructions
 
 1. Clone this repository:
-```bash
-git clone <your-repository-url>
-cd <repository-directory>
-```
 
 2. Create a `.env` file in the project root with your OpenAI API key:
-```bash
-echo "OPENAI_API_KEY=your-api-key-here" > .env
-```
 
 3. Build and run the Docker container:
 ```bash
