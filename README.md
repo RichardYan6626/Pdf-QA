@@ -3,8 +3,8 @@
 This application allows you to upload PDFs and ask questions about their content using GPT-4.
 
 ## Prerequisites
-- Docker and Docker Compose installed on your system
-- An OpenAI API key (get one from https://platform.openai.com/api-keys)
+- Docker
+- OpenAI API key (https://platform.openai.com/api-keys)
 
 ## Setup Instructions
 
