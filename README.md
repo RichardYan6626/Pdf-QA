@@ -24,7 +24,10 @@ docker-compose up --build
 - The `.env` file is listed in `.gitignore` to prevent accidental commits
 - Each user must use their own OpenAI API key
 
-## Usage
-1. Upload a PDF file on the main page
+## Get started
+1. Upload a PDF file on the main page. 
 2. Navigate to the Question Answering page to ask questions about the PDF
-3. View your chat history in the Chat History page
+3. View your chat history
+
+Tips: You can upload multiple files and view chat history for each file.
+However, the QA is only for the latest file to have a smaller vectorstore. 
