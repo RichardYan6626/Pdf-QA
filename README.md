@@ -1,6 +1,8 @@
 # PDF Question Answering App
 
 This application allows you to upload PDFs and ask questions about their content using GPT-4.
+Notice: When working with PDF of hundreds of pages, the upload will take a few minutes, but the retrieval time
+        does not change much.
 
 ## Prerequisites
 - Docker
