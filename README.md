@@ -1,8 +1,8 @@
 # PDF Question Answering App
 
-This application allows you to upload PDFs and ask questions about their content using GPT-4.
-Notice: When working with PDF of hundreds of pages, the upload will take a few minutes, but the retrieval time
-        does not change much.
+This application allows you to ask questions about you PDFs using GPT-4.
+Notice: When working with PDF of hundreds of pages, the upload will take a little bit longer, but the retrieval time
+        does not change much. The vectorstore is created on local disk and clear after the session ends
 
 ## Prerequisites
 - Docker
@@ -24,11 +24,11 @@ docker-compose up --build
 
 ## Get started
 1. Upload a PDF file on the main page. 
-2. Navigate to the Question Answering page to ask questions about the PDF
+2. Navigate to the Question Answering page and ask questions about the PDF
 3. View your chat history
 
 ## Tips: You can upload multiple files and view chat history for each file.
-However, the QA is only for the latest file to have a smaller vectorstore. 
+However, the QA is only for the latest file to have a smaller vectorstore for faster retrieval. 
 
 ## Update Thoughts:
 ###
