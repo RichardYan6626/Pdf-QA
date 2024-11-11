@@ -27,5 +27,15 @@ docker-compose up --build
 2. Navigate to the Question Answering page to ask questions about the PDF
 3. View your chat history
 
-Tips: You can upload multiple files and view chat history for each file.
+## Tips: You can upload multiple files and view chat history for each file.
 However, the QA is only for the latest file to have a smaller vectorstore. 
+
+## Update Thoughts:
+###
+This application is implemented using langchain RetrievalQA, so the user queries are embedded for a semantic search.
+i.e. if the user query is "what was mentioned about HuggingGPT?", then the query itself is embedded while it would be better to just embed "HuggingGPT".
+Also, RetrievalQA cannot handle summary tasks well due to its architecture and limited context window.
+### 
+Limited context window can be solved with MemGPT(currently known as Letta) and to make the application capable of handling different tasks,
+user query should first be fed into an LLM that categorize the task type and extract necessary information. Then specilized prompt templates can be
+used for different tasks.
