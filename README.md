@@ -21,10 +21,6 @@ docker-compose up --build
 
 4. Open your browser and go to http://localhost:8501
 
-## Security Note
-- Never share your `.env` file or API key
-- The `.env` file is listed in `.gitignore` to prevent accidental commits
-- Each user must use their own OpenAI API key
 
 ## Get started
 1. Upload a PDF file on the main page. 
