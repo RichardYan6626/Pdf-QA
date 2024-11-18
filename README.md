@@ -39,7 +39,7 @@ Also, RetrievalQA cannot handle summary tasks well due to its architecture and l
 Limited context window can be solved with MemGPT(currently known as Letta) and to make the application capable of handling different tasks,
 user query should first be fed into an LLM that categorize the task type and extract necessary information. Then specilized prompt templates can be used for different tasks.
 
-## Ongoing Projects or Thoughts:
+## Ongoing Projects and Thoughts:
 ###
 1. To-do list manager: generates priority recommendations in JSON format for the user's to-do list. There is a section
    for reviewing the completed tasks and with each task well done, you get a random, hopefully interesting image as a reward
