@@ -1,6 +1,6 @@
 # PDF Question Answering App
 This application allows you to ask questions about you PDFs using GPT-4. I made this to help read papers.
-There are also ongoing projects listed at the bottom aimed to make myself more productive in daily life.
+If you are interested, check below where I shared thoughts on onging projects
 
 Notice: When working with PDF of hundreds of pages, the upload will take a little bit longer, but the retrieval time
         does not change much. The vectorstore is created on local disk and cleared after the session ends
