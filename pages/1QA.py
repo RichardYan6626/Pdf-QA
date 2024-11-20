@@ -30,7 +30,7 @@ def main():
         
     try:
         initialize_qa_chain()
-        
+        #st.text_area doesn't respond well with keyboard strokes and sometimes adds extra ** mark, so had to do use text_input
         question = st.text_input("Ask a question about your PDF:")
         
         if question:
